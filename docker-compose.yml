@@ -41,5 +41,18 @@ services:
       kafka:
         condition: service_healthy
 
+  data-consumer:
+    build:
+      context: ./data_consumer
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: radiation-data
+    volumes:
+      - ./data_consumer:/app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   kafka_data:

@@ -1,10 +1,12 @@
 import os
 import time
+import json
+import time
+import logging
 import configparser
 import pandas as pd
 from kafka import KafkaProducer
-import json
-import logging
+from kafka.errors import NoBrokersAvailable
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -14,13 +16,20 @@ def load_config(config_path: str = "config.ini") -> configparser.ConfigParser:
     config.read(os.getenv("CONFIG_FILE", config_path))
     return config
 
-def create_kafka_producer(bootstrap_servers: str) -> KafkaProducer:
-    """Create and return a Kafka producer with JSON serialization."""
-    producer = KafkaProducer(
-        bootstrap_servers=bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8")
-    )
-    return producer
+
+
+def create_kafka_producer(bootstrap_servers):
+    while True:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+            )
+            return producer
+        except NoBrokersAvailable:
+            print("Kafka broker not available yet. Retrying in 5 seconds...")
+            time.sleep(5)
+
 
 def send_data_from_csv(producer: KafkaProducer, topic: str, csv_file_path: str, chunk_size: int = 10000):
     """Read data from a CSV file and send it to a Kafka topic."""
@@ -44,7 +53,7 @@ def send_data_from_csv(producer: KafkaProducer, topic: str, csv_file_path: str, 
             }
 
             producer.send(topic, value=data)
-            logging.info(f"Sent data: {data}")
+            logging.info(f"Sent data to kafka: {data}")
 
             time.sleep(0.01)
 
