@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -10,7 +8,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_METADATA_LOG_DIR: /var/lib/kafka/data
@@ -20,8 +18,14 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
       CLUSTER_ID: zrdRC-2GRYG5kygU-gcIEw
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
       - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   data-provider:
     build:
@@ -34,10 +38,8 @@ services:
       - ./data_provider:/app
       - ./data_provider/safecast_data:/app/safecast_data
     depends_on:
-      - kafka
-    
+      kafka:
+        condition: service_healthy
 
 volumes:
   kafka_data:
-
-

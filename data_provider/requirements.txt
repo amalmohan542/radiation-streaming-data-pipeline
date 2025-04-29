@@ -1,4 +1,4 @@
 python-dotenv
 kafka-python
 pandas
-logging
+
